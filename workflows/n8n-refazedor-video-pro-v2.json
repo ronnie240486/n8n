@@ -1,0 +1,296 @@
+{
+  "name": "Refazedor de V\u00eddeo com IA PRO",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "refazedor-video",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "1",
+      "name": "Entrada via Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json[\"link\"]}}",
+              "operation": "startsWith",
+              "value2": "https://www.youtube.com"
+            }
+          ]
+        }
+      },
+      "id": "2",
+      "name": "Verificar Link YouTube",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        300,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{$json[\"link\"]}}",
+        "responseFormat": "file"
+      },
+      "id": "3",
+      "name": "Baixar \u00c1udio",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        500,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "text": "Transcri\u00e7\u00e3o via Whisper",
+        "model": "whisper-1",
+        "audioFile": "={{$node[\"Baixar \u00c1udio\"].binary[\"data\"]}}"
+      },
+      "id": "4",
+      "name": "Transcrever com Whisper",
+      "type": "custom.whisperTranscribe",
+      "typeVersion": 1,
+      "position": [
+        700,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "text": "={{$node[\"Transcrever com Whisper\"].json[\"text\"]}}",
+        "instructions": "Reescreva o texto como um roteiro mais envolvente e narrativo",
+        "model": "gpt-4"
+      },
+      "id": "5",
+      "name": "Reescrever Texto",
+      "type": "n8n-nodes-base.openai",
+      "typeVersion": 1,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "text": "={{$node[\"Reescrever Texto\"].json[\"choices\"][0][\"message\"][\"content\"]}}",
+        "instructions": "Crie um t\u00edtulo e descri\u00e7\u00e3o otimizados para YouTube",
+        "model": "gpt-4"
+      },
+      "id": "6",
+      "name": "Gerar T\u00edtulo e Descri\u00e7\u00e3o",
+      "type": "n8n-nodes-base.openai",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        150
+      ]
+    },
+    {
+      "parameters": {
+        "text": "={{$node[\"Reescrever Texto\"].json[\"choices\"][0][\"message\"][\"content\"]}}",
+        "instructions": "Gere uma lista de hashtags relevantes para o v\u00eddeo",
+        "model": "gpt-4"
+      },
+      "id": "7",
+      "name": "Gerar Hashtags",
+      "type": "n8n-nodes-base.openai",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        450
+      ]
+    },
+    {
+      "parameters": {
+        "text": "={{$node[\"Reescrever Texto\"].json[\"choices\"][0][\"message\"][\"content\"]}}",
+        "voice": "Rachel"
+      },
+      "id": "8",
+      "name": "Narrar com ElevenLabs",
+      "type": "custom.elevenNarrate",
+      "typeVersion": 1,
+      "position": [
+        1300,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "audioPath": "={{$node[\"Narrar com ElevenLabs\"].json[\"audio_path\"]}}",
+        "imagePath": "static/thumb.jpg"
+      },
+      "id": "9",
+      "name": "Gerar V\u00eddeo Final",
+      "type": "custom.ffmpegGenerate",
+      "typeVersion": 1,
+      "position": [
+        1500,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "binaryPropertyName": "data",
+        "folderId": "root"
+      },
+      "id": "10",
+      "name": "Upload para Google Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 1,
+      "position": [
+        1700,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "123456789",
+        "text": "Seu v\u00eddeo com IA est\u00e1 pronto! \ud83d\ude80"
+      },
+      "id": "11",
+      "name": "Notificar no Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        1900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "sheetId": "SHEET_ID",
+        "range": "A1",
+        "options": {}
+      },
+      "id": "12",
+      "name": "Salvar no Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 1,
+      "position": [
+        2100,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Entrada via Webhook": {
+      "main": [
+        [
+          {
+            "node": "Verificar Link YouTube",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verificar Link YouTube": {
+      "main": [
+        [
+          {
+            "node": "Baixar \u00c1udio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baixar \u00c1udio": {
+      "main": [
+        [
+          {
+            "node": "Transcrever com Whisper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcrever com Whisper": {
+      "main": [
+        [
+          {
+            "node": "Reescrever Texto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reescrever Texto": {
+      "main": [
+        [
+          {
+            "node": "Narrar com ElevenLabs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gerar T\u00edtulo e Descri\u00e7\u00e3o",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gerar Hashtags",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Narrar com ElevenLabs": {
+      "main": [
+        [
+          {
+            "node": "Gerar V\u00eddeo Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gerar V\u00eddeo Final": {
+      "main": [
+        [
+          {
+            "node": "Upload para Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notificar no Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Salvar no Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "createdAt": "2025-07-28T23:56:11.544993",
+  "updatedAt": "2025-07-28T23:56:11.545004"
+}
