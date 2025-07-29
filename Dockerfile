@@ -1,12 +1,12 @@
 FROM n8nio/n8n
 
-# Instala ffmpeg e yt-dlp no Alpine (via apk e curl)
-USER root
+# Instala dependências: python3, pip, ffmpeg e yt-dlp
+RUN apt-get update && apt-get install -y \
+  python3 \
+  python3-pip \
+  ffmpeg \
+  curl && \
+  pip3 install yt-dlp
 
-RUN apk add --no-cache ffmpeg curl bash && \
-    curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp && \
-    chmod a+rx /usr/local/bin/yt-dlp
-
-USER node
 
 
